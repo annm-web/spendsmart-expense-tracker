@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SpendSmart - Expense Tracker</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
+        h1 { color: #1a73e8; font-size: 28px; margin-bottom: 20px; text-align: center; }
+        .container { max-width: 950px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .card h2 { color: #333; margin-bottom: 15px; font-size: 18px; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+        input, select, textarea { padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #1a73e8; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        .btn-green { background: #34a853; color: white; }
+        .btn-grey { background: #999; color: white; }
+        .btn-blue { background: #1a73e8; color: white; padding: 6px 14px; font-size: 13px; }
+        .btn-red { background: #ea4335; color: white; padding: 6px 14px; font-size: 13px; }
+        .btn:hover { opacity: 0.9; }
+        .summary-card { background: linear-gradient(135deg, #1a73e8, #0d47a1); color: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .summary-card h2 { color: white; margin-bottom: 10px; }
+        .summary-total { font-size: 32px; font-weight: bold; margin-bottom: 10px; }
+        .summary-breakdown { display: flex; flex-wrap: wrap; gap: 10px; }
+        .badge { background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; font-size: 13px; }
+        .filter-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; color: #555; font-size: 13px; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
+        td { padding: 12px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        tr:hover { background: #fafafa; }
+        .category-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .Food { background: #fce8e6; color: #c5221f; }
+        .Transport { background: #e8f0fe; color: #1a73e8; }
+        .Shopping { background: #fef7e0; color: #f29900; }
+        .Bills { background: #f3e8fd; color: #7b1fa2; }
+        .Entertainment { background: #e6f4ea; color: #1e8e3e; }
+        .Other { background: #f1f3f4; color: #555; }
+        .empty { text-align: center; color: #999; padding: 30px; }
+        .actions { display: flex; gap: 5px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>SpendSmart</h1>
+
+    <!-- Add/Edit Form -->
+    <div class="card">
+        <h2 id="form-title">Add Expense</h2>
+        <div class="form-row">
+            <input id="title" placeholder="Title e.g. Coffee at Starbucks" style="width:280px">
+            <input id="amount" type="number" placeholder="Amount (Rs.)" style="width:150px">
+            <select id="category" style="width:160px">
+                <option value="Food">Food</option>
+                <option value="Transport">Transport</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Bills">Bills</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Other">Other</option>
+            </select>
+            <input id="date" type="date" style="width:160px">
+        </div>
+        <div class="form-row">
+            <textarea id="note" placeholder="Note (optional)" rows="2" style="width:400px"></textarea>
+        </div>
+        <div class="form-row">
+            <button class="btn btn-green" onclick="submitExpense()">Save Expense</button>
+            <button class="btn btn-grey" onclick="cancelEdit()" id="cancel-btn" style="display:none">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Monthly Summary -->
+    <div class="summary-card" id="summary">
+        <h2>This Month</h2>
+        <div class="summary-total">Rs. 0.00</div>
+        <div class="summary-breakdown">No expenses yet</div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+        <h2>Filter Expenses</h2>
+        <div class="filter-row">
+            <select id="filter-category" onchange="loadExpenses()" style="width:160px">
+                <option value="">All Categories</option>
+                <option value="Food">Food</option>
+                <option value="Transport">Transport</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Bills">Bills</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Other">Other</option>
+            </select>
+            <input id="filter-title" placeholder="Search title..." oninput="loadExpenses()" style="width:200px">
+            <input id="filter-from" type="date" onchange="loadExpenses()">
+            <input id="filter-to" type="date" onchange="loadExpenses()">
+            <button class="btn btn-grey" onclick="clearFilters()">Clear</button>
+        </div>
+    </div>
+
+    <!-- Expenses Table -->
+    <div class="card">
+        <h2>All Expenses</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Note</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="expenses-table"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let editingId = null;
+    document.getElementById("date").valueAsDate = new Date();
+
+    async function loadExpenses() {
+        const category = document.getElementById("filter-category").value;
+        const title = document.getElementById("filter-title").value;
+        const from = document.getElementById("filter-from").value;
+        const to = document.getElementById("filter-to").value;
+
+        let url = "/expenses?";
+        if (category) url += `category=${category}&`;
+        if (title) url += `title=${title}&`;
+        if (from) url += `from_date=${from}&`;
+        if (to) url += `to_date=${to}&`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+        const tbody = document.getElementById("expenses-table");
+        tbody.innerHTML = "";
+
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty">No expenses found.</td></tr>';
+            return;
+        }
+
+        data.forEach(e => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${e.title}</strong></td>
+                    <td><strong>Rs.${e.amount}</strong></td>
+                    <td><span class="category-badge ${e.category}">${e.category}</span></td>
+                    <td>${e.date}</td>
+                    <td>${e.note || "-"}</td>
+                    <td class="actions">
+                        <button class="btn btn-blue" onclick="editExpense(${e.id}, '${e.title}', ${e.amount}, '${e.category}', '${e.date}', '${e.note}')">Edit</button>
+                        <button class="btn btn-red" onclick="deleteExpense(${e.id})">Delete</button>
+                    </td>
+                </tr>`;
+        });
+    }
+
+    async function loadSummary() {
+        const res = await fetch("/summary");
+        const data = await res.json();
+        let breakdown = Object.entries(data.breakdown)
+            .map(([cat, amt]) => `<span class="badge">${cat}: Rs.${amt.toFixed(2)}</span>`).join("");
+        document.getElementById("summary").innerHTML = `
+            <h2>This Month (${data.month})</h2>
+            <div class="summary-total">Rs. ${data.total.toFixed(2)}</div>
+            <div class="summary-breakdown">${breakdown || "No expenses yet"}</div>`;
+    }
+
+    async function submitExpense() {
+        const title = document.getElementById("title").value;
+        const amount = document.getElementById("amount").value;
+        const category = document.getElementById("category").value;
+        const date = document.getElementById("date").value;
+        const note = document.getElementById("note").value;
+
+        if (!title || !amount || !date) {
+            alert("Title, amount and date are required.");
+            return;
+        }
+
+        const body = { title, amount: parseFloat(amount), category, date, note };
+        const url = editingId ? `/expenses/${editingId}` : "/expenses";
+        const method = editingId ? "PUT" : "POST";
+
+        await fetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+
+        cancelEdit();
+        loadExpenses();
+        loadSummary();
+    }
+
+    function editExpense(id, title, amount, category, date, note) {
+        editingId = id;
+        document.getElementById("title").value = title;
+        document.getElementById("amount").value = amount;
+        document.getElementById("category").value = category;
+        document.getElementById("date").value = date;
+        document.getElementById("note").value = note === "undefined" ? "" : note;
+        document.getElementById("form-title").textContent = "Edit Expense";
+        document.getElementById("cancel-btn").style.display = "inline";
+        window.scrollTo(0, 0);
+    }
+
+    function cancelEdit() {
+        editingId = null;
+        document.getElementById("title").value = "";
+        document.getElementById("amount").value = "";
+        document.getElementById("date").valueAsDate = new Date();
+        document.getElementById("note").value = "";
+        document.getElementById("form-title").textContent = "Add Expense";
+        document.getElementById("cancel-btn").style.display = "none";
+    }
+
+    async function deleteExpense(id) {
+        if (!confirm("Delete this expense?")) return;
+        await fetch(`/expenses/${id}`, { method: "DELETE" });
+        loadExpenses();
+        loadSummary();
+    }
+
+    function clearFilters() {
+        document.getElementById("filter-category").value = "";
+        document.getElementById("filter-title").value = "";
+        document.getElementById("filter-from").value = "";
+        document.getElementById("filter-to").value = "";
+        loadExpenses();
+    }
+
+    loadExpenses();
+    loadSummary();
+</script>
+</body>
+</html>
