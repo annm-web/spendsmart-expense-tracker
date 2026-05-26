@@ -33,7 +33,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #1a73e8
 .insight-card.warning { border-left-color: #f29900; }
 .insight-card.success { border-left-color: #34a853; }
 .insight-card.danger { border-left-color: #ea4335; }
-.insight-icon { font-size: 24px; margin-bottom: 8px; }
+.insight-icon { font-size: 22px; margin-bottom: 8px; color: #1a73e8; font-weight: bold; }
 .insight-label { font-size: 12px; color: #888; margin-bottom: 4px; }
 .insight-value { font-size: 16px; font-weight: bold; color: #333; }
 .insight-tip { font-size: 12px; color: #666; margin-top: 4px; }
@@ -143,24 +143,24 @@ tr:hover { background: #fafafa; }
 </div>
 
 <script>
-let editingId = null;
-let allExpenses = [];
+var editingId = null;
+var allExpenses = [];
 document.getElementById("date").valueAsDate = new Date();
 
 async function loadExpenses() {
-    const category = document.getElementById("filter-category").value;
-    const title = document.getElementById("filter-title").value;
-    const from = document.getElementById("filter-from").value;
-    const to = document.getElementById("filter-to").value;
-    let url = "/expenses?";
+    var category = document.getElementById("filter-category").value;
+    var title = document.getElementById("filter-title").value;
+    var from = document.getElementById("filter-from").value;
+    var to = document.getElementById("filter-to").value;
+    var url = "/expenses?";
     if (category) url += "category=" + category + "&";
     if (title) url += "title=" + title + "&";
     if (from) url += "from_date=" + from + "&";
     if (to) url += "to_date=" + to + "&";
-    const res = await fetch(url);
-    const data = await res.json();
+    var res = await fetch(url);
+    var data = await res.json();
     allExpenses = data;
-    const tbody = document.getElementById("expenses-table");
+    var tbody = document.getElementById("expenses-table");
     tbody.innerHTML = "";
     if (data.length === 0) {
         tbody.innerHTML = "<tr><td colspan='6' class='empty'>No expenses found. Start adding above!</td></tr>";
@@ -174,16 +174,16 @@ async function loadExpenses() {
             "<td>" + e.date + "</td>" +
             "<td>" + (e.note || "-") + "</td>" +
             "<td class='actions'>" +
-            "<button class='btn btn-blue' onclick='editExpense(" + e.id + ", \"" + e.title + "\", " + e.amount + ", \"" + e.category + "\", \"" + e.date + "\", \"" + e.note + "\")'>Edit</button>" +
+            "<button class='btn btn-blue' onclick='editExpense(" + e.id + ", \"" + e.title + "\", " + e.amount + ", \"" + e.category + "\", \"" + e.date + "\", \"" + (e.note||"") + "\")'>Edit</button>" +
             "<button class='btn btn-red' onclick='deleteExpense(" + e.id + ")'>Delete</button>" +
             "</td></tr>";
     });
 }
 
 async function loadSummary() {
-    const res = await fetch("/summary");
-    const data = await res.json();
-    let breakdown = Object.entries(data.breakdown)
+    var res = await fetch("/summary");
+    var data = await res.json();
+    var breakdown = Object.entries(data.breakdown)
         .map(function(entry) { return "<span class='badge'>" + entry[0] + ": Rs." + entry[1].toFixed(2) + "</span>"; })
         .join("");
     document.getElementById("summary").innerHTML =
@@ -194,60 +194,60 @@ async function loadSummary() {
 }
 
 function loadInsights(data) {
-    const container = document.getElementById("insights");
+    var container = document.getElementById("insights");
     container.innerHTML = "";
     if (data.total === 0) return;
-    const topCategory = Object.entries(data.breakdown).sort(function(a,b){ return b[1]-a[1]; })[0];
-    const totalCount = allExpenses.length;
-    const biggest = allExpenses.reduce(function(max, e){ return e.amount > max.amount ? e : max; }, allExpenses[0]);
-    const dayOfMonth = new Date().getDate();
-    const dailyAvg = data.total / dayOfMonth;
-    const warningClass = data.total > 10000 ? "danger" : data.total > 5000 ? "warning" : "success";
-    const warningTip = data.total > 10000 ? "High spending this month!" : data.total > 5000 ? "Spending is moderate" : "Great job keeping expenses low!";
-    const statusText = data.total > 10000 ? "High" : data.total > 5000 ? "Moderate" : "Low";
+    var topCategory = Object.entries(data.breakdown).sort(function(a,b){ return b[1]-a[1]; })[0];
+    var totalCount = allExpenses.length;
+    var biggest = allExpenses.reduce(function(max, e){ return e.amount > max.amount ? e : max; }, allExpenses[0]);
+    var dayOfMonth = new Date().getDate();
+    var dailyAvg = data.total / dayOfMonth;
+    var warningClass = data.total > 10000 ? "danger" : data.total > 5000 ? "warning" : "success";
+    var warningTip = data.total > 10000 ? "High spending this month!" : data.total > 5000 ? "Spending is moderate" : "Great job keeping expenses low!";
+    var statusText = data.total > 10000 ? "High" : data.total > 5000 ? "Moderate" : "Low";
     container.innerHTML =
         "<div class='insight-card'>" +
-            "<div class='insight-icon'>[TOP]</div>" +
-            "<div class='insight-label'>Top Spending Category</div>" +
+            "<div class='insight-icon'>Top Category</div>" +
+            "<div class='insight-label'>Most Spent On</div>" +
             "<div class='insight-value'>" + topCategory[0] + "</div>" +
             "<div class='insight-tip'>Rs." + topCategory[1].toFixed(2) + " spent</div>" +
         "</div>" +
         "<div class='insight-card'>" +
-            "<div class='insight-icon'>[MAX]</div>" +
-            "<div class='insight-label'>Biggest Expense</div>" +
+            "<div class='insight-icon'>Biggest Expense</div>" +
+            "<div class='insight-label'>Single Largest</div>" +
             "<div class='insight-value'>" + biggest.title + "</div>" +
             "<div class='insight-tip'>Rs." + biggest.amount + "</div>" +
         "</div>" +
         "<div class='insight-card'>" +
-            "<div class='insight-icon'>[AVG]</div>" +
-            "<div class='insight-label'>Daily Average</div>" +
+            "<div class='insight-icon'>Daily Average</div>" +
+            "<div class='insight-label'>Avg Spend Per Day</div>" +
             "<div class='insight-value'>Rs." + dailyAvg.toFixed(2) + "</div>" +
             "<div class='insight-tip'>Based on " + dayOfMonth + " days</div>" +
         "</div>" +
         "<div class='insight-card " + warningClass + "'>" +
-            "<div class='insight-icon'>[STATUS]</div>" +
-            "<div class='insight-label'>Spending Status</div>" +
+            "<div class='insight-icon'>Spending Status</div>" +
+            "<div class='insight-label'>This Month</div>" +
             "<div class='insight-value'>" + statusText + "</div>" +
             "<div class='insight-tip'>" + warningTip + "</div>" +
         "</div>" +
         "<div class='insight-card'>" +
-            "<div class='insight-icon'>[COUNT]</div>" +
-            "<div class='insight-label'>Total Transactions</div>" +
+            "<div class='insight-icon'>Transactions</div>" +
+            "<div class='insight-label'>Total This Month</div>" +
             "<div class='insight-value'>" + totalCount + " expenses</div>" +
-            "<div class='insight-tip'>This month so far</div>" +
+            "<div class='insight-tip'>Keep tracking!</div>" +
         "</div>";
 }
 
 async function submitExpense() {
-    const title = document.getElementById("title").value;
-    const amount = document.getElementById("amount").value;
-    const category = document.getElementById("category").value;
-    const date = document.getElementById("date").value;
-    const note = document.getElementById("note").value;
+    var title = document.getElementById("title").value;
+    var amount = document.getElementById("amount").value;
+    var category = document.getElementById("category").value;
+    var date = document.getElementById("date").value;
+    var note = document.getElementById("note").value;
     if (!title || !amount || !date) { alert("Title, amount and date are required."); return; }
-    const body = { title: title, amount: parseFloat(amount), category: category, date: date, note: note };
-    const url = editingId ? "/expenses/" + editingId : "/expenses";
-    const method = editingId ? "PUT" : "POST";
+    var body = { title: title, amount: parseFloat(amount), category: category, date: date, note: note };
+    var url = editingId ? "/expenses/" + editingId : "/expenses";
+    var method = editingId ? "PUT" : "POST";
     await fetch(url, { method: method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     cancelEdit();
     loadExpenses();
